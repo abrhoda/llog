@@ -1,2 +1,31 @@
-# llog
-a little logging library for c99 with configurable rotation policies. 
+## llog
+a little log (llog) library for c99 with configurable rotation policies.
+
+## TODOs
+- [ ] implement a `llog.quiet`/`llog.verbose` field and set a threshold for those such as if `llog.quiet == 1`, `TRACE`, `DEBUG`, and (maybe) `INFO` logs are "no op".
+- [ ] managed files in the `llog.files` array by making `struct file { const char * filename; FILE *fd }` and making the `llog.files` array into a an array of `file` types instead.
+- [ ] managed files then can be tied to a `file_rotation_policy` to create a **rolling** file rotation policy. This should have naming of the file (based on the `file.filename` field) and configurable `TIME` or `SIZE` policy to rotate based on a time or a file size, respectively.
+
+## Overview
+### Fatures
+### API
+
+
+
+## Building
+
+### Example Project
+Use the simple makefile. It will build `example/main.c`, `llog.c`, `llog.h` and output to `bin/llog`.
+
+Flags for building:
+- `debug`: setting `debug=1` sets the `-g -O0` cflags. Defaults to `debug=0` which sets `-O3 -DNDEBUG` cflags.
+- `sanitize`: setting `sanitize=1` sets the `-fsanitize=address,leak,undefined` cflags. Defaults to `sanitize=0` which sets no additional cflags.
+- `color`: setting `color=1` passes the `-DLLOG_USE_COLOR` preprocessor option to the compiler and will result in color output to stdout/stderr. Defaults to `color=0` which doesn't set the preprocessor flag and results in no color output.
+
+### In An Actual Project
+All other configuration is done via the `static struct llog` struct which should not be accessed directly. Use the provided `set_XXX` functions from `llog.h` to set values on the static llog instance. This is done as recommended by the "GNU Coding Standards" on [Conditional Compilation](https://www.gnu.org/prep/standards/html_node/Conditional-Compilation.html). This is do as a clearer, more type safe choice with the trade off being that there is an execution of an `if/else` in some places based on the configuration. If this trade off is not one you want to make, feel free to modify the code to rely more heavily on macros instead.
+
+I am of the opinion that conditiional compilation with macros should be reserved for cases such as handling different versions of a program (like a `test` vs `prod` build where `test` might have more heavy logging), handling different hardware/os in the same codebase (like the `-DLLOG_USE_COLOR` macro used to compile with or without color output for systems that don't support color output), or handling compiler specific behavior. I tend to avoid them otherwise without good reason.
+
+In some cases, macros and conditional compilation need to be done though. So, what is a rule without an exception?:
+`-DLLOG_USE_COLOR` is the only configurable macro that is used when compiling. This defaults to off to account for systems that don't support colorized output. Pretty colors are an optional feature. 
