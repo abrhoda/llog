@@ -1,11 +1,6 @@
 ## llog
 a little log (llog) library for c99 with configurable rotation policies.
 
-## TODOs
-- [ ] implement a `llog.quiet`/`llog.verbose` field and set a threshold for those such as if `llog.quiet == 1`, `TRACE`, `DEBUG`, and (maybe) `INFO` logs are "no op".
-- [ ] managed files in the `llog.files` array by making `struct file { const char * filename; FILE *fd }` and making the `llog.files` array into a an array of `file` types instead.
-- [ ] managed files then can be tied to a `file_rotation_policy` to create a **rolling** file rotation policy. This should have naming of the file (based on the `file.filename` field) and configurable `TIME` or `SIZE` policy to rotate based on a time or a file size, respectively.
-
 ## Overview
 ### Fatures
 ### API
