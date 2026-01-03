@@ -7,9 +7,8 @@
 #include <time.h>
 
 enum {
-  LLOG_TAG_LENGTH = 300,
-  LLOG_FILES_LENGTH = 8,
-  MAX_FILE_NAME_LENGTH = 256
+  LLOG_STMT_LENGTH = 300,
+  LLOG_FILES_LENGTH = 8
 };
 
 enum log_level {

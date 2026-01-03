@@ -27,7 +27,7 @@ void create_rotation_policy(struct llog_rotation_policy *llog_rotation_policy, i
     return;
   }
 
-  if (max_size_in_mb == 0) {
+  if (max_size_in_mb < 1) {
     // TODO I don't like this requiring VA_ARGS. Can't call LOG_ERROR("simple string")
     LOG_ERROR("%s", "max_size_in_mb is 0");
     return;
@@ -57,7 +57,7 @@ void add_log_file(const char *name, struct llog_log_file *log_file, struct llog_
   }
 
   log_file->name = name;
-  log_file->file = fopen(name, "a+");
+  log_file->file = fopen(name, "ab");
   if (log_file->file == NULL) {
     LOG_ERROR("Could not open %s as log file", name);
     return;
@@ -87,16 +87,15 @@ void close_log_files(void) {
 // unix convention is to write all logs to stderr to avoid interfering with programs general output.
 static void write_to_stderr(struct llog_log_event *event) {
   size_t cursor = 0;
-  char log_tag_buffer[LLOG_TAG_LENGTH];
-  cursor += strftime(log_tag_buffer, sizeof(log_tag_buffer), "%H:%M:%S ", event->time);
+  char log_stmt_buffer[LLOG_STMT_LENGTH] = {0};
+  cursor += strftime(log_stmt_buffer, sizeof(log_stmt_buffer), "%H:%M:%S ", event->time);
 #ifdef LLOG_USE_COLOR
-  cursor += sprintf((log_tag_buffer+cursor), "%s%-5s\033[0m ", log_level_color_codes[event->level], log_level_strings[event->level]);
+  cursor += sprintf((log_stmt_buffer+cursor), "%s%-5s\033[0m %s:%d ", log_level_color_codes[event->level], log_level_strings[event->level], event->file, event->line);
 #else
-  cursor += sprintf((log_tag_buffer+cursor), "%-5s ", log_level_strings[event->level]);
+  cursor += sprintf((log_stmt_buffer+cursor), "%-5s %s:%d ", log_level_strings[event->level], event->file, event->line);
 #endif
-  cursor += sprintf((log_tag_buffer+cursor), "%s:%d ", event->file, event->line);
 
-  fprintf(stderr, "%s", log_tag_buffer);
+  fprintf(stderr, "%s", log_stmt_buffer);
   vfprintf(stderr, event->format, event->args);
   fprintf(stderr, "\n");
   fflush(stderr);
@@ -104,19 +103,20 @@ static void write_to_stderr(struct llog_log_event *event) {
 
 static void write_to_file(struct llog_log_event *event, FILE *file) {
   size_t cursor = 0;
-  char log_tag_buffer[LLOG_TAG_LENGTH];
-  cursor += strftime(log_tag_buffer, sizeof(log_tag_buffer), "%Y-%m-%d %H:%M:%S ", event->time);
-  cursor += sprintf((log_tag_buffer+cursor), "%-5s ", log_level_strings[event->level]);
-  cursor += sprintf((log_tag_buffer+cursor), "%s:%d ", event->file, event->line);
+  char log_stmt_buffer[LLOG_STMT_LENGTH];
+  cursor += strftime(log_stmt_buffer, sizeof(log_stmt_buffer), "%Y-%m-%d %H:%M:%S ", event->time);
+  cursor += sprintf((log_stmt_buffer+cursor), "%-5s %s:%d ", log_level_strings[event->level], event->file, event->line);
 
-  fprintf(file, "%s", log_tag_buffer);
+  // TODO this is 2 writes to the file. Could add event->format to the end of the log_stmt_buffer string and then use vfprintf(file, log_stmt_buffer,, event->args)
+  // However, writing to the file isnt actually done until the `fflush` call so 3 writes to the stream isn't a big deal.
+  fprintf(file, "%s", log_stmt_buffer);
   vfprintf(file, event->format, event->args);
   fprintf(file, "\n");
   fflush(file);
 }
 
-static int rotate_file(struct llog_log_file* log_file) {
-  printf("check and rotate file if needed: %s\n", log_file->name);
+//static int rotate_file(struct llog_log_file* log_file) {
+//  printf("check and rotate file if needed: %s\n", log_file->name);
   /* TODO rotate steps
    *  1. add current_size (size_t or int) and suffix (just int for now) to struct llog_log_file
    *  2. whenever any count > 0 of bytes are wrriten to a file, add to the current_size of that file
@@ -131,8 +131,8 @@ static int rotate_file(struct llog_log_file* log_file) {
    *  4. open a new filename.log file in `append + binary` ("ab") mode
    *  5. put new filename.log file's FILE * into llog_log_file->file field.
    */
-  return 0;
-}
+//  return 0;
+//}
 
 void llog_log(enum log_level log_level, const char* file, int line, const char *format, ...) {
   int count = 0;
@@ -160,10 +160,6 @@ void llog_log(enum log_level log_level, const char* file, int line, const char *
 
   while (count < LLOG_FILES_LENGTH && llog.files[count] != 0) {
     llog_log_file = llog.files[count];
-    if (llog_log_file->rotation_policy != NULL) {
-      // TODO check if file needs rotated.
-      rotate_file_if_needed(llog_log_file);
-    }
     va_start(event.args, format);
     write_to_file(&event, llog_log_file->file); 
     va_end(event.args);
