@@ -7,7 +7,7 @@
 #include <time.h>
 
 enum {
-  LLOG_STMT_LENGTH = 300,
+  LLOG_LINE_LENGTH = 512,
   LLOG_FILES_LENGTH = 8
 };
 

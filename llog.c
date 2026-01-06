@@ -86,30 +86,53 @@ void close_log_files(void) {
 
 // unix convention is to write all logs to stderr to avoid interfering with programs general output.
 static void write_to_stderr(struct llog_log_event *event) {
-  size_t cursor = 0;
-  char log_stmt_buffer[LLOG_STMT_LENGTH] = {0};
-  cursor += strftime(log_stmt_buffer, sizeof(log_stmt_buffer), "%H:%M:%S ", event->time);
+  size_t bytes = 0;
+  int cursor = 0;
+  char log_line_buffer[LLOG_LINE_LENGTH] = {0};
+  bytes += strftime(log_line_buffer, sizeof(log_line_buffer), "%H:%M:%S ", event->time);
+  if (bytes == 0) {
+    // TODO properly handle this error.
+    return;
+  }
 #ifdef LLOG_USE_COLOR
-  cursor += sprintf((log_stmt_buffer+cursor), "%s%-5s\033[0m %s:%d ", log_level_color_codes[event->level], log_level_strings[event->level], event->file, event->line);
+  cursor += sprintf((log_line_buffer+bytes), "%s%-5s\033[0m %s:%d ", log_level_color_codes[event->level], log_level_strings[event->level], event->file, event->line);
 #else
-  cursor += sprintf((log_stmt_buffer+cursor), "%-5s %s:%d ", log_level_strings[event->level], event->file, event->line);
+  cursor += sprintf((log_line_buffer+bytes), "%-5s %s:%d ", log_level_strings[event->level], event->file, event->line);
 #endif
-
-  fprintf(stderr, "%s", log_stmt_buffer);
+  if (cursor < 0) {
+    // TODO properly handle this error.
+    return;
+  }
+  if (cursor + bytes >= LLOG_LINE_LENGTH) {
+    // TODO properly handle this error. This should be never happen as LLOG_LINE_LENGTH should always be enough to hold max possible bytes unless the OS allows for filenames > 256 chars or a log statement is in the (100000000000000 + char count of (256 - strlen(filename)))th line in a file.
+    return;
+  }
+  fprintf(stderr, "%s", log_line_buffer);
   vfprintf(stderr, event->format, event->args);
   fprintf(stderr, "\n");
   fflush(stderr);
 }
 
 static void write_to_file(struct llog_log_event *event, FILE *file) {
-  size_t cursor = 0;
-  char log_stmt_buffer[LLOG_STMT_LENGTH];
-  cursor += strftime(log_stmt_buffer, sizeof(log_stmt_buffer), "%Y-%m-%d %H:%M:%S ", event->time);
-  cursor += sprintf((log_stmt_buffer+cursor), "%-5s %s:%d ", log_level_strings[event->level], event->file, event->line);
+  size_t bytes = 0;
+  int cursor = 0;
+  char log_line_buffer[LLOG_LINE_LENGTH] = {0};
+  bytes += strftime(log_line_buffer, sizeof(log_line_buffer), "%Y-%m-%d %H:%M:%S ", event->time);
+  if (cursor == 0) {
+    // TODO properly handle this error.
+    return;
+  }
+  cursor += sprintf((log_line_buffer+bytes), "%-5s %s:%d ", log_level_strings[event->level], event->file, event->line);
+  if (cursor < 0) {
+    // TODO properly handle this error.
+    return;
+  }
+  if (cursor + bytes >= LLOG_LINE_LENGTH) {
+    // TODO properly handle this error. This should be never happen as LLOG_LINE_LENGTH should always be enough to hold max possible bytes unless the OS allows for filenames > 256 chars or a log statement is in the (100000000000000 + char count of (256 - strlen(filename)))th line in a file.
+    return;
+  }
 
-  // TODO this is 2 writes to the file. Could add event->format to the end of the log_stmt_buffer string and then use vfprintf(file, log_stmt_buffer,, event->args)
-  // However, writing to the file isnt actually done until the `fflush` call so 3 writes to the stream isn't a big deal.
-  fprintf(file, "%s", log_stmt_buffer);
+  fprintf(file, "%s", log_line_buffer);
   vfprintf(file, event->format, event->args);
   fprintf(file, "\n");
   fflush(file);
