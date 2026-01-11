@@ -3,6 +3,7 @@
 
 static struct {
   struct llog_log_file *files[LLOG_FILES_LENGTH];
+  int log_file_count;
   bool use_utc;
   enum log_level log_level;
 } llog = { {0}, 1, TRACE };
@@ -136,6 +137,36 @@ static void write_to_file(struct llog_log_event *event, FILE *file) {
   vfprintf(file, event->format, event->args);
   fprintf(file, "\n");
   fflush(file);
+}
+
+static void write_to_files(struct llog_log_event *event) {
+  int total_offset = 0;
+  char log_line_buffer[LLOG_LINE_LENGTH] = {0};
+
+  total_offset += (int) strftime(log_line_buffer, sizeof(log_line_buffer), "%Y-%m-%d %H:%M:%S ", event->time);
+  if (total_offset == 0) {
+    // TODO properly handle this error, although this hsould be impossible if log_line_buffer size gets set very small.
+    return;
+  }
+  total_offset += snprintf(log_line_buffer+total_offset, sizeof(log_line_buffer) - total_offset, "%-5s %s:%d ", log_level_strings[event->level], event->file, event->line);
+  if (total_offset < 0) {
+    // TODO properly handle this error.
+    return;
+  }
+  if (total_offset >= LLOG_LINE_LENGTH) {
+    // TODO properly handle this error, although it should only be possible if log_line_buffer size gets set very small or filename is near linux filename max length and near line number 1M+ of a file.
+    return;
+  }
+  total_offset += vsnprintf(log_line_buffer+total_offset, sizeof(log_line_buffer) - total_offset, event->format, event->args);
+  if (total_offset < 0) {
+    // TODO properly handle this error.
+    return;
+  }
+  if (total_offset >= LLOG_LINE_LENGTH) {
+    // TODO properly handle this error. This means that the log message was trunctated!
+    return;
+  }
+
 }
 
 //static int rotate_file(struct llog_log_file* log_file) {
