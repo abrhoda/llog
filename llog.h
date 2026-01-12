@@ -56,6 +56,7 @@ struct llog_log_file {
 void llog_log(enum log_level log_level, const char* file, int line, const char *format, ...);
 void create_rotation_policy(struct llog_rotation_policy *llog_rotation_policy, int max_size_in_mb);
 void add_log_file(const char *name, struct llog_log_file *llog_log_file, struct llog_rotation_policy *llog_rotation_policy);
+void remove_log_file(const char *name);
 void close_log_files(void);
 void set_use_utc_time(bool use_utc);
 void set_minimum_log_level(enum log_level log_level);

@@ -3,10 +3,10 @@
 
 static struct {
   struct llog_log_file *files[LLOG_FILES_LENGTH];
-  int log_file_count;
+  size_t files_count;
   bool use_utc;
   enum log_level log_level;
-} llog = { {0}, 1, TRACE };
+} llog = { {0}, 0, 1, TRACE };
 
 static const char *log_level_strings[] = { "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL" };
 
@@ -41,20 +41,22 @@ void create_rotation_policy(struct llog_rotation_policy *llog_rotation_policy, i
   llog_rotation_policy->suffix = 1;
 }
 
+// note that setting a llog_rotation_policy on log_file is cleared before here. llog_rotation_policy must be passed here
+// for validation before it is added to the log_file
 void add_log_file(const char *name, struct llog_log_file *log_file, struct llog_rotation_policy *llog_rotation_policy) {
-  int file_count = 0;
+  int to_add_idx = 0;
   // TODO handle these better than just returning if either are null.
   if (name == NULL || log_file == NULL) {
     return;
   }
 
-  while(file_count < LLOG_FILES_LENGTH && llog.files[file_count] != 0) {
-    ++file_count;
-  }
-
-  if (file_count == LLOG_FILES_LENGTH) {
+  if (llog.files_count == LLOG_FILES_LENGTH) {
     LOG_ERROR("Couldn't add dest log file to llog.files due to llog.files at LLOG_FILE_LENGTH (%d)", LLOG_FILES_LENGTH);
     return;
+  }
+
+  while(to_add_idx < LLOG_FILES_LENGTH && llog.files[to_add_idx] != 0) {
+    ++to_add_idx;
   }
 
   log_file->name = name;
@@ -63,17 +65,22 @@ void add_log_file(const char *name, struct llog_log_file *log_file, struct llog_
     LOG_ERROR("Could not open %s as log file", name);
     return;
   }
-  llog.files[file_count] = log_file;
+  log_file->rotation_policy = NULL; // don't allow existing policies without any validation.
+  llog.files[to_add_idx] = log_file;
+  llog.files_count++;
 
   // TODO handle these better than just returning. Should LOG_ERROR so a message at least goes to stderr
   if (llog_rotation_policy == NULL || llog_rotation_policy->rotation_type == NONE) {
     return;
   }
-
   if ((llog_rotation_policy->rotation_type & SIZE) == SIZE && llog_rotation_policy->max_size_in_mb == 0) {
     return;
   }
   log_file->rotation_policy = llog_rotation_policy;
+}
+
+void remove_log_file(const char *name) {
+  LOG_ERROR("remove_log_file not implemented yet so log file with name %s not removed.", name);
 }
 
 void close_log_files(void) {
@@ -141,6 +148,7 @@ static void write_to_file(struct llog_log_event *event, FILE *file) {
 
 static void write_to_files(struct llog_log_event *event) {
   int total_offset = 0;
+  size_t iter = 0;
   char log_line_buffer[LLOG_LINE_LENGTH] = {0};
 
   total_offset += (int) strftime(log_line_buffer, sizeof(log_line_buffer), "%Y-%m-%d %H:%M:%S ", event->time);
@@ -167,6 +175,13 @@ static void write_to_files(struct llog_log_event *event) {
     return;
   }
 
+  // write to all files
+  for (iter = 0; iter < llog.files_count; ++iter) {
+    if (llog.files[iter] == 0) {
+      continue;
+    }
+    
+  }
 }
 
 //static int rotate_file(struct llog_log_file* log_file) {
@@ -211,6 +226,7 @@ void llog_log(enum log_level log_level, const char* file, int line, const char *
   va_start(event.args, format);
   write_to_stderr(&event);
   va_end(event.args);
+
 
   while (count < LLOG_FILES_LENGTH && llog.files[count] != 0) {
     llog_log_file = llog.files[count];
