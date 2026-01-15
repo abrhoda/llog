@@ -1,12 +1,6 @@
-1. [ ] implement a `llog.quiet`/`llog.verbose` field and set a threshold for those such as if `llog.quiet == 1`, `TRACE`, `DEBUG`, and (maybe) `INFO` logs are "no op" where the `llog_log` function immediately returns with a success (or void).
-2. [ ] managed files in the `llog.files` array by making `struct file { const char * filename; FILE *fd }` and making the `llog.files` array into a an array of `file` types instead.
-3. [ ] writes to stderr and each file call `fprintf(FILE *stream, ...rest)`, `vfprintf(FILE *stream, const char *fmt, ...)`, and then `fprintf(FILE *stream, "\n")` in that order. These writes are buffered as `fprintf` is a buffered function call so it likely makes no difference as I'm adding chars to the stream and then manually calling `fflust(stream)` but still, this feels dirty. Fix this to collect the log statement into a single `char *` before the write to the `FILE *stream`. Somethings need to be considered when doing this:
-    1. aggregating everything to a fixed size `char buffer[BUFFER_SIZE]` could mean that the log message is longer than the buffer.
-    2. If a message is longer than the buffer, chunk 1 should have the "tag" (datetime stamp, level, and file:line prefix) and subsequent chunks should not.
-    3. Subsequent chunks should be prefixed with '\t' to indent and show they are the same message.
-    5. all chunks should be written to the stream BEFORE flush is called
-4. [ ] managed files then can be tied to a `file_rotation_policy` to create a **rolling** file rotation policy. This should have naming of the file (based on the `file.filename` field) and configurable `TIME` or `SIZE` policy to rotate based on a time or a file size, respectively.
-    1. when a log message is bigger than 1 `BUFFER_SIZE` chunk, the rotation policy should be be checked. That would mean that it would be possible to rotate a log file in the middle of writing a complete message if it overflows the buffer and has to be written in chunks.
-    2. if a rotation happens in the middle of writing an entire log message (such as between chunks 2 and 3), then a last flush should be called, the rotation should happen, and then all subsequent chunks should be put into the stream before flush is called again.
-6. [ ] decide how to handle errors properly. Error's cannot call the `llog_log(args)` function because if `write_to_file` or `write_to_stderr` fails, this creates a recursive loop that might continually fail.
-7. [ ] support unicode and control it with `ENABLE_UNICODE` macro.
+1. [ ] decide how to handle errors properly. Error's cannot call the `llog_log(args)` function because if `write_to_file` or `write_to_stderr` fails, this creates a recursive loop that might continually fail. This includes handling warnings about ignoring error handling, introduction of an error enum and returning int instead of void.
+2. [ ] time based rotation policy to rotate either at an interval (aka every hour/day) or at a specific datetime. However, because this is written in a single threaded way, the rotation would have to happen _at the time of trying to write to a a log file_ and not actually at the exact interval/datetime. That is because the rotation policy is checked and files are rotated right before a write happens.
+3. [ ] better README.md and documentation of the public api, macros that control color + buffer size, etc.
+4. [ ] support unicode and control it with `ENABLE_UNICODE` macro.
+5. [ ] example + unit test.
+6. [ ] application provided lock + unlock functions so that this library can be used in a multithreaded applcation.
