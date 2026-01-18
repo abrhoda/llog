@@ -14,7 +14,8 @@ static struct {
   size_t files_count;
   bool use_utc;
   enum log_level min_log_level;
-} llog = {{0}, 0, 1, TRACE};
+  lock_fn lock_fn;
+} llog = {{0}, 0, 1, TRACE, NULL};
 
 static const char* log_level_strings[] = {"TRACE", "DEBUG", "INFO",
                                           "WARN",  "ERROR", "FATAL"};
@@ -113,7 +114,6 @@ void remove_log_file(const char* name) {
 int close_log_files(void) {
   int file_count = 0;
   while (file_count < LLOG_FILES_LENGTH && llog.files[file_count] != NULL && llog.files[file_count]->file != NULL) {
-    // happen but safety first.
     if (fclose(llog.files[file_count]->file) != 0) {
       return EC_CANNOT_CLOSE_FILE;
     }
@@ -125,15 +125,15 @@ int close_log_files(void) {
 
 // NOTE: this could possible fail "mid rotation"
 static int rotate_file(struct llog_log_file* log_file) {
-  int offset = 0;
+  int written = 0;
   size_t max_length = strlen(log_file->name) + LLOG_ROTATION_POLICY_SUFFIX_LENGTH;
   char target[max_length];
-  offset = snprintf(target, sizeof(target), "%s-%d", log_file->name,
+  written = snprintf(target, sizeof(target), "%s-%d", log_file->name,
            log_file->rotation_policy->suffix++);
-  if (offset < 0) {
+  if (written < 0) {
     return EC_FORMAT;
   }
-  if ((size_t) offset > max_length) {
+  if ((size_t) written > max_length) {
     return EC_BUFFER_OVERFLOW;
   }
 
@@ -150,6 +150,7 @@ static int rotate_file(struct llog_log_file* log_file) {
     return EC_CANNOT_OPEN_FILE;
   }
 
+  log_file->current_size = 0;
   return EC_NONE;
 }
 
@@ -239,6 +240,8 @@ static int write_to_files(struct llog_log_event* event) {
     if (llog.files[iter]->rotation_policy != NULL &&
         (offset + 1 + llog.files[iter]->current_size >=
          llog.files[iter]->rotation_policy->max_size_in_bytes)) {
+      printf("rotating file. current size = %lu, offset = %d, max size: %lu\n",
+          llog.files[iter]->current_size, (offset+1), llog.files[iter]->rotation_policy->max_size_in_bytes);
       rotation_result = rotate_file(llog.files[iter]);
       if (rotation_result != EC_NONE) {
         return rotation_result;
@@ -266,7 +269,9 @@ void llog_log(enum log_level log_level, const char* file, int line,
     return;
   }
 
-  // TODO lock here
+  if (llog.lock_fn != NULL) {
+    llog.lock_fn(true);
+  }
   now = time(NULL);
   if (llog.use_utc) {
     event.time = gmtime(&now);
@@ -284,5 +289,7 @@ void llog_log(enum log_level log_level, const char* file, int line,
     va_end(event.args);
   }
 
-  // TODO unlock here
+  if (llog.lock_fn != NULL) {
+    llog.lock_fn(false);
+  }
 }

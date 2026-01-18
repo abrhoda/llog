@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <time.h>
 
+typedef void (*lock_fn)(bool);
+
 enum {
   LLOG_LINE_LENGTH = 512,
   LLOG_FILES_LENGTH = 8,
