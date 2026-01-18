@@ -1,5 +1,22 @@
 ---
-Checks: 'clang-diagnostic-*,clang-analyzer-*,-*,bugprone-*,cert-*,clang-analyzer-*,concurrency-*,linuxkernel-*,llvm-*,misc-*,modernize-*,performance-*,portability-*,readability-*'
+# -concurrency-mt-unsafe excluded for gmtime/localtime because c99
+Checks: >
+  -*,
+  clang-diagnostic-*,
+  clang-analyzer-*,
+  bugprone-*,
+  cert-*,
+  clang-analyzer-*,
+  concurrency-*,
+  linuxkernel-*,
+  llvm-*,
+  misc-*,
+  modernize-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  -llvm-header-guard,
+  -concurrency-mt-unsafe
 WarningsAsErrors: ''
 HeaderFileExtensions:
   - h

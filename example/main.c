@@ -23,9 +23,9 @@ int main(void) {
   int second = 0;
   int res = 0;
   const char *fmt = "%d + %d = %d";
-  const char *log_file_name = "example/example.log";
+  const char *log_file_name = "logs/example.log";
   struct llog_log_file log_file;
-  int max_size = 10;
+  int max_size = 200;
   struct llog_rotation_policy rotation_policy;
 
   srand(time(NULL));
