@@ -22,8 +22,10 @@ int main(void) {
   int first = 0;
   int second = 0;
   int res = 0;
-  const char *fmt = "%d + %d = %d";
-  const char *log_file_name = "logs/example.log";
+  int iter = 0;
+  int max_iters = 10;
+  const char *fmt = "iteration %d: %d + %d = %d";
+  const char *log_file_name = "example/logs/example.log";
   struct llog_log_file log_file;
   int max_size = 200;
   struct llog_rotation_policy rotation_policy;
@@ -41,8 +43,10 @@ int main(void) {
   // setting a log file which will be written to in addition to stdout/stderr
   add_log_file(log_file_name, &log_file, &rotation_policy);
 
-  LOG_FATAL(fmt, first, second, res);
-  LOG_INFO(fmt, first, second, res);
+  for (iter = 0; iter < max_iters; ++iter) {
+    LOG_FATAL(fmt, iter, first, second, res);
+    LOG_INFO(fmt, iter, first, second, res);
+  }
 
   // manually closing the log files at the end
   close_log_files();

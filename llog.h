@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <time.h>
 
+typedef void (*lock_fn)(bool);
+
 enum {
   LLOG_LINE_LENGTH = 512,
   LLOG_FILES_LENGTH = 8,
@@ -22,7 +24,7 @@ enum ERROR_CODE {
   EC_BUFFER_OVERFLOW = 6,
   EC_FORMAT = 7,
   EC_STREAM_FLUSH = 8,
-  EC_OUTSTREAM = 8, // unable to write to os.
+  EC_OUTSTREAM = 8,  // unable to write to os.
 };
 
 enum log_level {
@@ -74,9 +76,9 @@ struct llog_log_file {
 void llog_log(enum log_level log_level, const char* file, int line,
               const char* format, ...);
 int create_rotation_policy(struct llog_rotation_policy* llog_rotation_policy,
-                            size_t max_size_in_bytes);
+                           size_t max_size_in_bytes);
 int add_log_file(const char* name, struct llog_log_file* llog_log_file,
-                  struct llog_rotation_policy* llog_rotation_policy);
+                 struct llog_rotation_policy* llog_rotation_policy);
 void remove_log_file(const char* name);
 int close_log_files(void);
 void set_use_utc_time(bool use_utc);

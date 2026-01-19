@@ -4,4 +4,3 @@
 - [ ] example + unit test.
 - [ ] application provided lock + unlock functions so that this library can be used in a multithreaded applcation.
 - [ ] BUG: currently, if a rotation policy's max size is X and each run of the application writes Y bytes to the file where Y\<X, then the file is never rotated and the file grows over the max that the policy sets. Each time the application runs, `current_size` starts at 0. SOLUTION: on adding a file to the llog struct by the `add_log_file` function, check if file exists and if it does, get its size and set in the `current_size` for the file.
-- [ ] support unicode and control it with `ENABLE_UNICODE` macro.
