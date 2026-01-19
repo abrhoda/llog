@@ -32,7 +32,7 @@ void set_minimum_log_level(enum log_level log_level) {
 }
 
 int create_rotation_policy(struct llog_rotation_policy* llog_rotation_policy,
-                            size_t max_size_in_bytes) {
+                           size_t max_size_in_bytes) {
   if (llog_rotation_policy == NULL) {
     LOG_ERROR(
         "Could not create rotation policy with max size = %d due to "
@@ -58,7 +58,7 @@ int create_rotation_policy(struct llog_rotation_policy* llog_rotation_policy,
 // llog_rotation_policy must be passed here for validation before it is added to
 // the log_file
 int add_log_file(const char* name, struct llog_log_file* log_file,
-                  struct llog_rotation_policy* llog_rotation_policy) {
+                 struct llog_rotation_policy* llog_rotation_policy) {
   int to_add_idx = 0;
   if (name == NULL || log_file == NULL) {
     LOG_ERROR("%s", "name or log_file where null.");
@@ -113,7 +113,8 @@ void remove_log_file(const char* name) {
 
 int close_log_files(void) {
   int file_count = 0;
-  while (file_count < LLOG_FILES_LENGTH && llog.files[file_count] != NULL && llog.files[file_count]->file != NULL) {
+  while (file_count < LLOG_FILES_LENGTH && llog.files[file_count] != NULL &&
+         llog.files[file_count]->file != NULL) {
     if (fclose(llog.files[file_count]->file) != 0) {
       return EC_CANNOT_CLOSE_FILE;
     }
@@ -126,14 +127,15 @@ int close_log_files(void) {
 // NOTE: this could possible fail "mid rotation"
 static int rotate_file(struct llog_log_file* log_file) {
   int written = 0;
-  size_t max_length = strlen(log_file->name) + LLOG_ROTATION_POLICY_SUFFIX_LENGTH;
+  size_t max_length =
+      strlen(log_file->name) + LLOG_ROTATION_POLICY_SUFFIX_LENGTH;
   char target[max_length];
   written = snprintf(target, sizeof(target), "%s-%d", log_file->name,
-           log_file->rotation_policy->suffix++);
+                     log_file->rotation_policy->suffix++);
   if (written < 0) {
     return EC_FORMAT;
   }
-  if ((size_t) written > max_length) {
+  if ((size_t)written > max_length) {
     return EC_BUFFER_OVERFLOW;
   }
 
@@ -241,7 +243,8 @@ static int write_to_files(struct llog_log_event* event) {
         (offset + 1 + llog.files[iter]->current_size >=
          llog.files[iter]->rotation_policy->max_size_in_bytes)) {
       printf("rotating file. current size = %lu, offset = %d, max size: %lu\n",
-          llog.files[iter]->current_size, (offset+1), llog.files[iter]->rotation_policy->max_size_in_bytes);
+             llog.files[iter]->current_size, (offset + 1),
+             llog.files[iter]->rotation_policy->max_size_in_bytes);
       rotation_result = rotate_file(llog.files[iter]);
       if (rotation_result != EC_NONE) {
         return rotation_result;

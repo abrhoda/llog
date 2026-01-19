@@ -1,5 +1,6 @@
 ---
 # -concurrency-mt-unsafe excluded for gmtime/localtime because c99
+# -clang-diagnostic-format-nonliteral because this is specifically a logging lib
 Checks: >
   -*,
   clang-diagnostic-*,
@@ -16,15 +17,16 @@ Checks: >
   portability-*,
   readability-*,
   -llvm-header-guard,
-  -concurrency-mt-unsafe
-WarningsAsErrors: ''
+  -concurrency-mt-unsafe,
+  -clang-diagnostic-format-nonliteral
+WarningsAsErrors: '*'
 HeaderFileExtensions:
   - h
   - hh
 ImplementationFileExtensions:
   - c
   - cc
-HeaderFilterRegex: './include/*'
+HeaderFilterRegex: './include/*,*.h'
 FormatStyle: file # change to file
 #CheckOptions:
 #  - { key: readability-identifier-naming.FunctionCase, value: lower_case }
