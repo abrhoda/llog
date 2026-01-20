@@ -117,10 +117,11 @@ int add_log_file(const char* name, struct llog_log_file* log_file,
 }
 
 int remove_log_file(const char* name) {
-  LOG_INFO("Removing file %s from llog.\n", name);
   size_t idx = 0;
+  LOG_INFO("Removing file %s from llog.\n", name);
   while (idx < LLOG_FILES_LENGTH) {
-    if (llog.files[idx] != NULL && strncmp(llog.files[idx]->name, name, strlen(name)) == 0) {
+    if (llog.files[idx] != NULL &&
+        strncmp(llog.files[idx]->name, name, strlen(name)) == 0) {
       break;
     }
     ++idx;
@@ -131,7 +132,7 @@ int remove_log_file(const char* name) {
   }
   if (llog.files[idx]->file != NULL && (fclose(llog.files[idx]->file) != 0)) {
     LOG_ERROR("Could not close file %s\n", name);
-    return EC_CANNOT_CLOSE_FILE; 
+    return EC_CANNOT_CLOSE_FILE;
   }
   llog.files[idx]->file = NULL;
   llog.files[idx] = NULL;
