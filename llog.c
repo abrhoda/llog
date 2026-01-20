@@ -61,7 +61,7 @@ int add_log_file(const char* name, struct llog_log_file* log_file,
                  struct llog_rotation_policy* llog_rotation_policy) {
   int to_add_idx = 0;
   long file_size = -1;
-  if (name == NULL || log_file == NULL) {
+  if (name == NULL || strlen(name) == 0 || log_file == NULL) {
     LOG_ERROR("%s", "name or log_file where null.");
     return EC_INVALID_PARAM;
   }
@@ -74,7 +74,7 @@ int add_log_file(const char* name, struct llog_log_file* log_file,
     return EC_MAX_FILES;
   }
 
-  while (to_add_idx < LLOG_FILES_LENGTH && llog.files[to_add_idx] != 0) {
+  while (to_add_idx < LLOG_FILES_LENGTH && llog.files[to_add_idx] != NULL) {
     ++to_add_idx;
   }
 
@@ -116,11 +116,26 @@ int add_log_file(const char* name, struct llog_log_file* log_file,
   return EC_NONE;
 }
 
-void remove_log_file(const char* name) {
-  LOG_ERROR(
-      "remove_log_file not implemented yet so log file with name %s not "
-      "removed.",
-      name);
+int remove_log_file(const char* name) {
+  LOG_INFO("Removing file %s from llog.\n", name);
+  size_t idx = 0;
+  while (idx < LLOG_FILES_LENGTH) {
+    if (llog.files[idx] != NULL && strncmp(llog.files[idx]->name, name, strlen(name)) == 0) {
+      break;
+    }
+    ++idx;
+  }
+  if (idx == LLOG_FILES_LENGTH) {
+    LOG_WARN("No log file with name %s found to remove.\n", name);
+    return EC_FILE_NOT_FOUND;
+  }
+  if (llog.files[idx]->file != NULL && (fclose(llog.files[idx]->file) != 0)) {
+    LOG_ERROR("Could not close file %s\n", name);
+    return EC_CANNOT_CLOSE_FILE; 
+  }
+  llog.files[idx]->file = NULL;
+  llog.files[idx] = NULL;
+  return EC_NONE;
 }
 
 int close_log_files(void) {

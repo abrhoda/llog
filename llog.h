@@ -18,14 +18,15 @@ enum ERROR_CODE {
   EC_NONE = 0,
   EC_INVALID_PARAM = 1,
   EC_MAX_FILES = 2,
-  EC_CANNOT_OPEN_FILE = 3,
-  EC_CANNOT_CLOSE_FILE = 4,
-  EC_CANNOT_RENAME_FILE = 5,
-  EC_SIZE_OP = 6,
-  EC_BUFFER_OVERFLOW = 7,
-  EC_FORMAT = 8,
-  EC_STREAM_FLUSH = 9,
-  EC_OUTSTREAM = 10,  // unable to write to os.
+  EC_FILE_NOT_FOUND = 3,
+  EC_CANNOT_OPEN_FILE = 4,
+  EC_CANNOT_CLOSE_FILE = 5,
+  EC_CANNOT_RENAME_FILE = 6,
+  EC_SIZE_OP = 7,
+  EC_BUFFER_OVERFLOW = 8,
+  EC_FORMAT = 9,
+  EC_STREAM_FLUSH = 11,
+  EC_OUTSTREAM = 12,  // unable to write to os.
 };
 
 enum log_level {
@@ -80,7 +81,7 @@ int create_rotation_policy(struct llog_rotation_policy* llog_rotation_policy,
                            size_t max_size_in_bytes);
 int add_log_file(const char* name, struct llog_log_file* llog_log_file,
                  struct llog_rotation_policy* llog_rotation_policy);
-void remove_log_file(const char* name);
+int remove_log_file(const char* name);
 int close_log_files(void);
 void set_use_utc_time(bool use_utc);
 void set_minimum_log_level(enum log_level log_level);
