@@ -21,10 +21,11 @@ enum ERROR_CODE {
   EC_CANNOT_OPEN_FILE = 3,
   EC_CANNOT_CLOSE_FILE = 4,
   EC_CANNOT_RENAME_FILE = 5,
-  EC_BUFFER_OVERFLOW = 6,
-  EC_FORMAT = 7,
-  EC_STREAM_FLUSH = 8,
-  EC_OUTSTREAM = 8,  // unable to write to os.
+  EC_SIZE_OP = 6,
+  EC_BUFFER_OVERFLOW = 7,
+  EC_FORMAT = 8,
+  EC_STREAM_FLUSH = 9,
+  EC_OUTSTREAM = 10,  // unable to write to os.
 };
 
 enum log_level {

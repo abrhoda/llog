@@ -60,6 +60,7 @@ int create_rotation_policy(struct llog_rotation_policy* llog_rotation_policy,
 int add_log_file(const char* name, struct llog_log_file* log_file,
                  struct llog_rotation_policy* llog_rotation_policy) {
   int to_add_idx = 0;
+  long file_size = -1;
   if (name == NULL || log_file == NULL) {
     LOG_ERROR("%s", "name or log_file where null.");
     return EC_INVALID_PARAM;
@@ -83,14 +84,25 @@ int add_log_file(const char* name, struct llog_log_file* log_file,
     LOG_ERROR("Could not open %s as log file", name);
     return EC_CANNOT_OPEN_FILE;
   }
+  // if file exists, get its current size.
+  // WARN: this is technically UB for binary files but widely accepted.
+  if (fseek(log_file->file, 0, SEEK_END) != 0) {
+    return EC_SIZE_OP;
+  }
+  file_size = ftell(log_file->file);
+  if (file_size < 0) {
+    return EC_SIZE_OP;
+  }
+  if (fseek(log_file->file, 0, SEEK_SET) != 0) {
+    return EC_SIZE_OP;
+  }
+
   // don't allow existing policies without any validation.
   log_file->rotation_policy = NULL;
-  log_file->current_size = 0;
+  log_file->current_size = (size_t)file_size;
   llog.files[to_add_idx] = log_file;
   llog.files_count++;
 
-  // TODO handle these better than just returning. Should LOG_ERROR so a message
-  // at least goes to stderr
   if (llog_rotation_policy == NULL ||
       llog_rotation_policy->rotation_type == NONE) {
     return EC_NONE;
@@ -127,31 +139,49 @@ int close_log_files(void) {
 // NOTE: this could possible fail "mid rotation"
 static int rotate_file(struct llog_log_file* log_file) {
   int written = 0;
+  int target_exists = 0;
   size_t max_length =
       strlen(log_file->name) + LLOG_ROTATION_POLICY_SUFFIX_LENGTH;
   char target[max_length];
-  written = snprintf(target, sizeof(target), "%s-%d", log_file->name,
-                     log_file->rotation_policy->suffix++);
-  if (written < 0) {
-    return EC_FORMAT;
-  }
-  if ((size_t)written > max_length) {
-    return EC_BUFFER_OVERFLOW;
-  }
+  FILE* check_file = NULL;
+
+  // check if the file exists and increment the rotation polict's suffix.
+  do {
+    written = snprintf(target, sizeof(target), "%s-%d", log_file->name,
+                       log_file->rotation_policy->suffix++);
+    if (written < 0) {
+      return EC_FORMAT;
+    }
+    if ((size_t)written > max_length) {
+      return EC_BUFFER_OVERFLOW;
+    }
+    target_exists = 0;
+    check_file = fopen(target, "r");
+    if (check_file != NULL) {
+      target_exists = 1;
+      if (fclose(check_file) != 0) {
+        return EC_CANNOT_CLOSE_FILE;
+      }
+    }
+  } while (target_exists);
 
   if (fclose(log_file->file) != 0) {
+    printf("couldn't close file\n");
     return EC_CANNOT_CLOSE_FILE;
   }
 
   if (rename(log_file->name, target) != 0) {
+    printf("Couldn't rename file. Exiting rotation\n");
     return EC_CANNOT_RENAME_FILE;
   }
 
   log_file->file = fopen(log_file->name, "ab");
   if (log_file->file == NULL) {
+    printf("couldn't open new log file\n");
     return EC_CANNOT_OPEN_FILE;
   }
 
+  printf("rotation completed.\n");
   log_file->current_size = 0;
   return EC_NONE;
 }
