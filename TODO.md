@@ -1,4 +1,5 @@
 - [ ] decide how to handle errors properly. Currently, errors from the `ERROR_CODE` enum propogate up to the top level `llog_log` function but this is a `void` return type. Decide how to handle these?
 - [ ] time based rotation policy to rotate either at an interval (aka every hour/day) or at a specific datetime. However, because this is written in a single threaded way, the rotation would have to happen _at the time of trying to write to a a log file_ and not actually at the exact interval/datetime. That is because the rotation policy is checked and files are rotated right before a write happens.
 - [ ] better README.md and documentation of the public api, macros that control color + buffer size, explanation of rotation policies and limitations, etc.
+- [ ] passing `void *userdata` to the lock function along with the `boolean` for `lock` similar to pthreads.
 - [ ] example + unit test.
