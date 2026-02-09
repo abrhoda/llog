@@ -1,0 +1,2 @@
+2026-01-20 04:11:09 FATAL example/main.c:47 iteration 3: 47 + 25 = 72
+2026-01-20 04:11:09 INFO  example/main.c:48 iteration 3: 47 + 25 = 72

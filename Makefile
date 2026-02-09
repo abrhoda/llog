@@ -1,5 +1,6 @@
 NAME := llog
 BIN_DIR := bin
+OBJ_DIR := obj
 DEBUG ?= 0
 SANITIZE ?= 0
 COLOR ?= 0
@@ -46,9 +47,19 @@ ifeq ($(COLOR), 1)
 	ENABLE_COLOR = "-DLLOG_USE_COLOR"
 endif
 
-$(NAME): example/main.c llog.c llog.h
+$(NAME): examples/main.c llog.c llog.h
 	mkdir -p $(BIN_DIR)
 	$(CC) $(ENABLE_COLOR) $(CFLAGS) -o $(BIN_DIR)/$@ $?
+
+.PHONY: static-lib
+static-lib:
+	mkdir -p $(OBJ_DIR)
+	$(CC) $(ENABLE_COLOR) $(CFLAGS) -c $(NAME).c -I./ -o $(OBJ_DIR)/$(NAME).o
+	ar rcs $(BIN_DIR)/lib$(NAME).a $(OBJ_DIR)/$(NAME).o
+
+.PHONY: shared-lib
+shared-lib:
+	@echo "Not implemented."
 
 .PHONY: format
 format:
@@ -58,3 +69,13 @@ format:
 lint:
 	$(LINTER) --config-file=.clang-tidy llog.c llog.h -- $(CFLAGS) -Wmost
 
+.PHONY: clean
+clean:
+	rm -f bin/*
+	rm -f obj/*
+	rm -f build/*
+
+.PHONY: example
+example: examples/main.c llog.h llog.c
+	mkdir -p $(BIN_DIR)
+	$(CC) $(ENABLE_COLOR) $(CFLAGS) -o $(BIN_DIR)/$@ $?
