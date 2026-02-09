@@ -58,4 +58,4 @@ dkms.conf
 bin/
 
 # logs dir from example
-example/logs/*
+examples/logs/*
