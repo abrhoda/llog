@@ -56,6 +56,8 @@ dkms.conf
 
 # output binary
 bin/
+build/
+obj/
 
 # logs dir from example
 examples/logs/*
